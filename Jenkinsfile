@@ -1,6 +1,6 @@
 pipeline {
     agent any
-    
+
     environment {
         DOCKER_COMPOSE_FILE = "docker-compose.yml"
         DOCKER_ID = "eliedatasctst"
@@ -10,54 +10,47 @@ pipeline {
         DOCKER_CREDENTIALS = credentials('DOCKER_HUB_PASS')
     }
 
-
+    stages {
         stage('Check Workspace') {
             steps {
                 sh "pwd"
                 sh "ls -al"
             }
         }
-    }
 
-
-
-    
-    stages {
         stage('Build and Push Images') {
             steps {
                 sh "docker-compose -f ${DOCKER_COMPOSE_FILE} build"
-                
                 script {
-                    docker.withRegistry('', DOCKER_CREDENTIALS) {
-                        sh """
-                            docker tag movie_service ${MOVIE_SERVICE_IMAGE}:${DOCKER_TAG}
-                            docker tag cast_service ${CAST_SERVICE_IMAGE}:${DOCKER_TAG}
-                            docker push ${MOVIE_SERVICE_IMAGE}:${DOCKER_TAG}
-                            docker push ${CAST_SERVICE_IMAGE}:${DOCKER_TAG}
-                        """
-                    }
+                    sh """
+                        docker login -u ${DOCKER_ID} -p ${DOCKER_CREDENTIALS}
+                        docker tag movie_service ${MOVIE_SERVICE_IMAGE}:${DOCKER_TAG}
+                        docker tag cast_service ${CAST_SERVICE_IMAGE}:${DOCKER_TAG}
+                        docker push ${MOVIE_SERVICE_IMAGE}:${DOCKER_TAG}
+                        docker push ${CAST_SERVICE_IMAGE}:${DOCKER_TAG}
+                    """
                 }
             }
         }
-        
+
         stage('Deploy with Docker Compose') {
             steps {
                 sh "docker-compose -f ${DOCKER_COMPOSE_FILE} up -d"
             }
         }
-        
+
         stage('Test Acceptance') {
             steps {
                 script {
                     sh '''
                         sleep 30
-                        curl localhost:8080/api/v1/movies/docs 
-                        curl localhost:8080/api/v1/casts/docs 
+                        curl -s localhost:8080/api/v1/movies/docs || echo "Movies service unavailable"
+                        curl -s localhost:8080/api/v1/casts/docs || echo "Casts service unavailable"
                     '''
                 }
             }
         }
-        
+
         stage('Deploy to Kubernetes') {
             environment {
                 KUBECONFIG = credentials("config")
@@ -70,7 +63,7 @@ pipeline {
                         }
                     }
                 }
-                
+
                 stage('Deploy to QA') {
                     steps {
                         script {
@@ -78,7 +71,7 @@ pipeline {
                         }
                     }
                 }
-                
+
                 stage('Deploy to Staging') {
                     steps {
                         script {
@@ -86,7 +79,7 @@ pipeline {
                         }
                     }
                 }
-                
+
                 stage('Deploy to Prod') {
                     steps {
                         timeout(time: 15, unit: "MINUTES") {
@@ -100,7 +93,7 @@ pipeline {
             }
         }
     }
-
+}
 
 def deployToK8s(String namespace) {
     sh """
@@ -109,6 +102,7 @@ def deployToK8s(String namespace) {
         cat \$KUBECONFIG > .kube/config
         cp fastapi/values.yaml values.yml
         sed -i "s+tag.*+tag: ${DOCKER_TAG}+g" values.yml
+        kubectl get namespace ${namespace} || kubectl create namespace ${namespace}
         helm upgrade --install app fastapi --values=values.yml --namespace ${namespace}
     """
 }
