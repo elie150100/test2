@@ -9,6 +9,15 @@ pipeline {
         DOCKER_TAG = "v.${BUILD_NUMBER}.0"
         DOCKER_CREDENTIALS = credentials('DOCKER_HUB_PASS')
     }
+    stages {
+    stage('Check Workspace') {
+        steps {
+            sh "pwd"
+            sh "ls -al"
+        }
+    }
+}
+
     
     stages {
         stage('Build and Push Images') {
