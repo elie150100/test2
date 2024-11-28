@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_COMPOSE_FILE = "master/docker-compose.yml"
+        DOCKER_COMPOSE_FILE = "docker-compose.yml"
         DOCKER_ID = "eliedatasctst"
         MOVIE_SERVICE_IMAGE = "${DOCKER_ID}/movie-service"
         CAST_SERVICE_IMAGE = "${DOCKER_ID}/cast-service"
