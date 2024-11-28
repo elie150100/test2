@@ -100,7 +100,7 @@ pipeline {
             }
         }
     }
-}
+
 
 def deployToK8s(String namespace) {
     sh """
