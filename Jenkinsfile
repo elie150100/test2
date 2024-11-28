@@ -10,7 +10,7 @@ pipeline {
         DOCKER_CREDENTIALS = credentials('DOCKER_HUB_PASS')
     }
 
-    stages {
+
         stage('Check Workspace') {
             steps {
                 sh "pwd"
@@ -18,7 +18,7 @@ pipeline {
             }
         }
     }
-}
+
 
 
     
