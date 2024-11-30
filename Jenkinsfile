@@ -31,6 +31,7 @@ pipeline {
         }
         stage('Deploy with Docker Compose') {
             steps {
+<<<<<<< HEAD
                 sh "docker-compose -f ${DOCKER_COMPOSE_FILE} up -d"
             }
         }
@@ -97,3 +98,80 @@ def deployToK8s(String namespace) {
         helm upgrade --install app fastapi --values=values.yml --namespace ${namespace}
     """
 }
+=======
+                // Déployer les services en utilisant le fichier docker-compose.yml
+                sh "docker-compose -f $DOCKER_COMPOSE_FILE up -d"
+            }
+        }
+        stage('Test Acceptance'){ // we launch the curl command to validate that the container responds to the request
+                    steps {
+                            script {
+                            sh '''
+                            curl localhost:8081/api/v1/movies/docs 
+                            curl localhost:8081/api/v1/casts/docs 
+                            '''
+                            }
+                    }
+                }
+ stage('Docker Push'){ //we pass the built image to our docker hub account
+            environment
+            {
+                DOCKER_PASS = credentials("DOCKER_HUB_PASS") // we retrieve  docker password from secret text called docker_hub_pass saved on jenkins
+            }
+
+            steps {
+                script {
+                sh '''
+                docker login -u $DOCKER_ID -p $DOCKER_PASS
+                docker push $DOCKER_ID/$DOCKER_IMAGE:$DOCKER_TAG
+                '''
+                }
+            }
+
+        }
+ 
+ 
+ 
+        stage('dev'){
+        environment
+        {
+        KUBECONFIG = credentials("config") // we retrieve  kubeconfig from secret file called config saved on jenkins
+        }
+            steps {
+                script {
+                sh '''
+                rm -Rf .kube
+                mkdir .kube
+                ls
+                cat $KUBECONFIG > .kube/config
+                cp exemple/values.yaml values.yml
+                cat values.yml
+                sed -i "s+tag.*+tag: ${DOCKER_TAG}+g" values.yml
+                helm upgrade --install app fastapi --values=values.yml --namespace dev
+                '''
+                }
+            }
+
+        }
+        stage('Deploiement en QA') {
+    environment {
+        KUBECONFIG = credentials("config") // on récupère le kubeconfig depuis le fichier secret "config" enregistré sur Jenkins
+    }
+    steps {
+        script {
+            sh '''
+            rm -Rf .kube
+            mkdir .kube
+            ls
+            cat $KUBECONFIG > .kube/config
+            cp fastapi/values.yaml values.yml
+            cat values.yml
+            sed -i "s+tag.*+tag: ${DOCKER_TAG}+g" values.yml
+            helm upgrade --install app fastapi --values=values.yml --namespace qa
+            '''
+        }
+    }
+}
+}
+}
+>>>>>>> Ajout de nouveaux fichiers
