@@ -1,0 +1,31 @@
+replicaCount: 1
+
+image:
+  repository: elie150100/movie-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8000
+
+environment:
+  - name: DATABASE_URI
+    value: postgresql://movie_db_username:movie_db_password@movie-db-service/movie_db_dev
+  - name: CAST_SERVICE_HOST_URL
+    value: http://cast-service:8000/api/v1/casts/
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+database:
+  image: postgres:12.1-alpine
+  env:
+    POSTGRES_USER: movie_db_username
+    POSTGRES_PASSWORD: movie_db_password
+    POSTGRES_DB: movie_db_dev

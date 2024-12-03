@@ -1,0 +1,29 @@
+replicaCount: 1
+
+image:
+  repository: elie150100/cast-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8000
+
+environment:
+  - name: DATABASE_URI
+    value: postgresql://cast_db_username:cast_db_password@cast-db-service/cast_db_dev
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+database:
+  image: postgres:12.1-alpine
+  env:
+    POSTGRES_USER: cast_db_username
+    POSTGRES_PASSWORD: cast_db_password
+    POSTGRES_DB: cast_db_dev

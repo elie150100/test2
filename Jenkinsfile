@@ -38,9 +38,15 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        sleep 30
-                        curl -s localhost:8080/api/v1/movies/docs || echo "Movies service unavailable"
-                        curl -s localhost:8080/api/v1/casts/docs || echo "Casts service unavailable"
+                        s helm upgrade --install movie-service ./movie-service \
+                            -f values.yaml \
+                            -f movie-service/values.yaml \
+                            --namespace production
+                            
+                            helm upgrade --install cast-service ./cast-service \
+                            -f values.yaml \
+                            -f cast-service/values.yaml \
+                            --namespace production
                     '''
                 }
             }
